@@ -1,0 +1,225 @@
+.public-wrapper {
+  min-height: 100vh;
+  padding: 1rem;
+  background: #e5e7eb; /* Light gray base to make the glass container pop */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* PC Floating Pill Container (Reference 1) */
+.home-container {
+  max-width: 1400px;
+  width: 100%;
+  background: #f8fafc;
+  border-radius: 40px; /* Highly rounded as seen in Ref 1 */
+  min-height: 90vh;
+  margin: 1rem auto;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.nav-public {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 3rem;
+  z-index: 10;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  transition: var(--transition);
+}
+
+.nav-links a:hover {
+  color: var(--text-main);
+}
+
+/* Hero Section Refinement */
+.hero-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4rem 2rem;
+  position: relative;
+}
+
+.hero-title {
+  font-size: 5rem;
+  line-height: 1;
+  margin-bottom: 2rem;
+  max-width: 800px;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+.hero-subtitle {
+  color: var(--text-muted);
+  max-width: 500px;
+  margin-bottom: 2.5rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Stock Dashboard Grid */
+.stock-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  padding: 4rem 3rem;
+  background: white;
+}
+
+.stock-card {
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.stock-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.stock-item:last-child {
+  border-bottom: none;
+}
+
+/* Pangkalan Directory (Reference 2 Mobile Style) */
+.pangkalan-section {
+  padding: 6rem 3rem;
+  background: white;
+}
+
+.section-header {
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.pangkalan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Pangkalan Card AESTHETIC (Ref 2) */
+.p-card {
+  background: #fdfdfd;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+  position: relative;
+}
+
+.p-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.p-card-image {
+  height: 200px;
+  background: #f1f5f9;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+}
+
+.p-card-content {
+  padding: 1.5rem;
+}
+
+.p-card-branch {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+/* Mobile Specific Bottom Nav (Ref 2) */
+.mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-main);
+  padding: 0.75rem 2rem;
+  border-radius: 999px;
+  gap: 2rem;
+  z-index: 100;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.mobile-nav-item {
+  color: white;
+  opacity: 0.5;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.mobile-nav-item.active {
+  opacity: 1;
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+  .hero-title { font-size: clamp(2.5rem, 8vw, 4rem); }
+  .stock-grid { grid-template-columns: repeat(2, 1fr); padding: 2rem; }
+  .pangkalan-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .public-wrapper { padding: 0; background: #f8fafc; }
+  .home-container {
+    border-radius: 0;
+    margin: 0;
+    min-height: 100vh;
+    box-shadow: none;
+  }
+  .nav-public { padding: 1.25rem; }
+  .nav-links { display: none; }
+  .mobile-nav { display: flex; }
+  
+  .hero-section { padding: 4rem 1.5rem; }
+  .hero-title { font-size: 2.75rem; line-height: 1.1; margin-bottom: 1.5rem; }
+  .hero-actions { flex-direction: column; width: 100%; }
+  .hero-actions .btn { width: 100%; }
+
+  .stock-grid { grid-template-columns: 1fr; gap: 1rem; padding: 2rem 1.5rem; }
+  .stock-card { padding: 1.5rem; }
+  
+  .pangkalan-section { padding: 4rem 1.25rem; }
+  .section-header h2 { font-size: 1.75rem !important; }
+  .p-card-image { height: 160px; }
+  
+  footer { padding: 3rem 1.5rem 6rem 1.5rem; }
+}
