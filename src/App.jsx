@@ -48,7 +48,7 @@ const RootRoute = () => {
 
 function App() {
   return (
-    <Router>
+    <Router basename="/agen-gas">
       <AuthProvider>
         <NotificationProvider>
           <Routes>
