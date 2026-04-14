@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
 import { db, recordPangkalanSale, getSales, getPangkalanById } from '../../services/dataService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { 
@@ -22,7 +23,7 @@ const UserSales = () => {
   // Form State
   const [formData, setFormData] = useState({ gasType: 'gas3kg', quantity: '' });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
+  const setNotification = useNotification();
 
   useEffect(() => {
     if (user?.pangkalanId) {
@@ -48,15 +49,12 @@ const UserSales = () => {
     e.preventDefault();
     if (!formData.quantity || parseInt(formData.quantity) <= 0) return;
     
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
     try {
       await recordPangkalanSale(user.pangkalanId, pangkalanName, formData.gasType, formData.quantity);
-      setMessage({ type: 'success', text: 'Penjualan berhasil dicatat & stok terpotong.' });
+      setNotification.success('Penjualan berhasil dicatat & stok terpotong.');
       setFormData({ ...formData, quantity: '' });
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      setNotification.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -148,23 +146,6 @@ const UserSales = () => {
                     />
                  </div>
 
-                 {message.text && (
-                   <div style={{ 
-                      padding: '1rem', 
-                      borderRadius: '12px', 
-                      marginBottom: '1.5rem', 
-                      fontSize: '0.85rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      background: message.type === 'error' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-                      color: message.type === 'error' ? '#ef4444' : '#22c55e',
-                      border: `1px solid ${message.type === 'error' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`
-                   }}>
-                      {message.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
-                      {message.text}
-                   </div>
-                 )}
 
                  <button 
                     type="submit" 

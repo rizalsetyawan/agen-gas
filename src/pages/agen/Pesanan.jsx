@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getAllOrders, updateOrderStatus, getPangkalan } from '../../services/dataService';
+import { useNotification } from '../../context/NotificationContext';
 import { ShoppingCart, CheckCircle, Truck, Package, Download, Milestone, ChevronDown, ChevronUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -8,6 +9,7 @@ const AdminOrders = () => {
   const [filter, setFilter] = useState('all');
   const [pangkalan, setPangkalan] = useState([]);
   const [expandedCards, setExpandedCards] = useState({});
+  const setNotification = useNotification();
 
   const toggleExpand = (pid) => {
     setExpandedCards(prev => ({ ...prev, [pid]: !prev[pid] }));
@@ -24,8 +26,9 @@ const AdminOrders = () => {
   const handleStatusUpdate = async (id, newStatus) => {
     try {
       await updateOrderStatus(id, newStatus);
+      setNotification.success("Status pesanan berhasil diperbarui!");
     } catch (error) {
-      alert("Gagal memperbarui status");
+      setNotification.error("Gagal memperbarui status: " + error.message);
     }
   };
 

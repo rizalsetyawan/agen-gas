@@ -20,7 +20,8 @@ import {
   LayoutDashboard,
   TrendingUp,
   Sun,
-  Moon
+  Moon,
+  Database
 } from 'lucide-react';
 
 const Layout = ({ children }) => {
@@ -50,6 +51,7 @@ const Layout = ({ children }) => {
     { name: 'Pangkalan', path: '/admin/pangkalan', icon: <Users size={20} /> },
     { name: 'Stok Gas', path: '/admin/stok', icon: <Package size={20} /> },
     { name: 'Laporan', path: '/admin/laporan', icon: <FileText size={20} /> },
+    { name: 'Master Data', path: '/admin/database', icon: <Database size={20} /> },
   ] : [
     { name: 'Dashboard', path: '/user', icon: <LayoutDashboard size={20} /> },
     { name: 'Catat Penjualan', path: '/user/penjualan', icon: <TrendingUp size={20} /> },
@@ -65,7 +67,6 @@ const Layout = ({ children }) => {
         flexDirection: 'column', 
         height: 'calc(100vh - 2rem)', 
         width: '280px',
-        margin: '1rem 0 1rem 1rem',
         borderRadius: '32px',
         background: 'var(--bg-glass)',
         backdropFilter: 'blur(30px)',
@@ -73,7 +74,7 @@ const Layout = ({ children }) => {
         animation: 'none',
         zIndex: 1000,
         boxShadow: '0 20px 50px rgba(0,0,0,0.1)',
-        transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), margin 0.4s'
+        transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), left 0.4s, margin 0.4s'
       }}>
         <div className="sidebar-logo" style={{ padding: '2rem 1.5rem', marginBottom: '1rem' }}>
           <Logo size={32} />
@@ -108,7 +109,7 @@ const Layout = ({ children }) => {
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
         
         {/* Modern Header (Floating Glass) */}
-        <header className="glass" style={{ 
+        <header className="glass header-glass" style={{ 
           height: '80px', margin: '1rem', borderRadius: '24px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 1.5rem',
           zIndex: 100

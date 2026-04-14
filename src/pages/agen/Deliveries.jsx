@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { getDeliveries, getDeliveryStops } from '../../services/dataService';
-import { Truck, MapPin, Calendar, Hash, UserCircle, CheckCircle2, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { getDeliveries, getDeliveryStops, updateShipmentLocation } from '../../services/dataService';
+import { useNotification } from '../../context/NotificationContext';
+import { Truck, MapPin, Calendar, Hash, UserCircle, CheckCircle2, Clock, ChevronDown, ChevronUp, Save, Navigation } from 'lucide-react';
 
 const DeliveryCard = ({ delivery }) => {
   const [stops, setStops] = useState([]);
   const [expanded, setExpanded] = useState(false);
+  const setNotification = useNotification();
 
   useEffect(() => {
     const unsubscribe = getDeliveryStops(delivery.id, setStops);
@@ -65,6 +67,20 @@ const DeliveryCard = ({ delivery }) => {
                }}
             ></div>
          </div>
+      </div>
+
+      <div style={{ 
+         padding: '1.25rem', 
+         background: 'var(--bg-app)', 
+         borderRadius: '16px', 
+         display: 'flex', 
+         alignItems: 'center', 
+         gap: '0.75rem', 
+         border: '1px solid var(--border)',
+         marginBottom: '1.5rem'
+      }}>
+         <Navigation size={18} color="var(--primary)" />
+         <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Lokasi Sekarang: <b style={{color: 'var(--primary)', marginLeft: '0.5rem'}}>{delivery.currentLocation || 'Gudang Agen'}</b></span>
       </div>
 
       <button 

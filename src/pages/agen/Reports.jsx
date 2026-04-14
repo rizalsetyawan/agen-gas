@@ -1,10 +1,12 @@
 import React from 'react';
 import { getDocs, collection } from 'firebase/firestore';
 import { db } from '../../services/firebase';
+import { useNotification } from '../../context/NotificationContext';
 import { Download, FileSpreadsheet, FileText, PieChart, Shield } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const Reports = () => {
+  const setNotification = useNotification();
 
   const exportData = async (collectionName, fileName) => {
     try {
@@ -21,7 +23,7 @@ const Reports = () => {
       });
 
       if (data.length === 0) {
-        alert(`Tidak ada data di koleksi ${collectionName}`);
+        setNotification.warning(`Tidak ada data di koleksi ${collectionName}`);
         return;
       }
 
@@ -29,9 +31,10 @@ const Reports = () => {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, collectionName);
       XLSX.writeFile(wb, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      setNotification.success(`Laporan ${fileName} berhasil diekspor!`);
     } catch (error) {
       console.error("Export Error:", error);
-      alert("Gagal melakukan export data.");
+      setNotification.error("Gagal melakukan export data: " + error.message);
     }
   };
 

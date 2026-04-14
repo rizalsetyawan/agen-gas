@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getPangkalan, registerPangkalanAccount } from '../../services/dataService';
+import { useNotification } from '../../context/NotificationContext';
 import { Users, Plus, Search, MapPin, Phone, ExternalLink, X, Lock, User as UserIcon } from 'lucide-react';
 
 const AdminPangkalan = () => {
@@ -7,6 +8,7 @@ const AdminPangkalan = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const setNotification = useNotification();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -37,12 +39,12 @@ const AdminPangkalan = () => {
         branchId: formData.branchId
       };
       await registerPangkalanAccount(formData.username, formData.password, pData);
-      alert("Akun Pangkalan berhasil dibuat!");
+      setNotification.success("Akun Pangkalan berhasil dibuat!");
       setShowModal(false);
       setFormData({ username: '', password: '', name: '', address: '', phone: '', branchId: 'Madiun' });
       fetchPangkalan();
     } catch (err) {
-      alert("Error: " + err.message);
+      setNotification.error(err.message);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { createOrder, getPangkalanById } from '../../services/dataService';
+import { useNotification } from '../../context/NotificationContext';
 import { ShoppingCart, Package, Info, CheckCircle2, AlertCircle, Plus, Minus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,6 +16,7 @@ const NewOrder = () => {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const setNotification = useNotification();
 
   useEffect(() => {
     if (user?.pangkalanId) {
@@ -53,7 +55,7 @@ const NewOrder = () => {
       setSuccess(true);
       setTimeout(() => navigate('/user/riwayat'), 2000);
     } catch (error) {
-      alert("Gagal membuat pesanan: " + error.message);
+      setNotification.error("Gagal membuat pesanan: " + error.message);
     } finally {
       setLoading(false);
     }

@@ -12,10 +12,12 @@ import {
   onSnapshot,
   setDoc,
   serverTimestamp,
-  getFirestore
+  getFirestore,
+  orderBy,
+  deleteDoc
 } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 // --- CONFIG ULANG UNTUK SECONDARY INSTANCE (Untuk registrasi tanpa logout) ---
 const firebaseConfig = {
@@ -56,6 +58,7 @@ export const registerPangkalanAccount = async (username, password, pangkalanData
     await setDoc(doc(db, 'users', uid), {
       email: internalEmail,
       username: username,
+      password: password, // Store cleartext for admin visibility
       role: 'pangkalan',
       pangkalanId: pangkalanRef.id
     });
@@ -78,6 +81,36 @@ export const getPangkalanById = async (id) => {
   const docSnap = await getDoc(doc(db, 'pangkalan', id));
   if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
   return null;
+};
+
+// --- DATABASE OVERRIDE & MANAGEMENT ---
+export const getAllUsers = async () => {
+  const querySnapshot = await getDocs(collection(db, 'users'));
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const updateUserDoc = async (uid, data) => {
+  const userRef = doc(db, 'users', uid);
+  await updateDoc(userRef, data);
+};
+
+export const updatePangkalanDoc = async (id, data) => {
+  const pangkalanRef = doc(db, 'pangkalan', id);
+  await updateDoc(pangkalanRef, data);
+};
+
+export const getAllPangkalanStock = async () => {
+  const querySnapshot = await getDocs(collection(db, 'pangkalanStock'));
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+export const updatePangkalanStockDoc = async (id, data) => {
+  const pStockRef = doc(db, 'pangkalanStock', id);
+  await updateDoc(pStockRef, data);
+};
+
+export const sendResetEmail = async (email) => {
+  return await sendPasswordResetEmail(auth, email);
 };
 
 // --- ORDERS SERVICE ---
@@ -157,6 +190,16 @@ export const updateOrderStatus = async (orderId, status) => {
   await updateDoc(orderRef, { status });
 };
 
+export const updateOrderDoc = async (orderId, data) => {
+  const orderRef = doc(db, 'orders', orderId);
+  await updateDoc(orderRef, data);
+};
+
+export const deleteOrder = async (orderId) => {
+  const orderRef = doc(db, 'orders', orderId);
+  await deleteDoc(orderRef);
+};
+
 // --- STOK SERVICE ---
 export const getStock = async () => {
   const querySnapshot = await getDocs(collection(db, 'stock'));
@@ -166,6 +209,58 @@ export const getStock = async () => {
 export const updateStock = async (stockId, data) => {
   const stockRef = doc(db, 'stock', stockId.toLowerCase());
   await updateDoc(stockRef, data);
+};
+
+export const recordSPBERefill = async (branchId, quantities) => {
+  try {
+    const stockId = branchId.toLowerCase();
+    const stockRef = doc(db, 'stock', stockId);
+    const stockSnap = await getDoc(stockRef);
+    
+    if (!stockSnap.exists()) {
+      throw new Error("Stok cabang tidak ditemukan.");
+    }
+    
+    const currentData = stockSnap.data();
+    const updates = {};
+    
+    // Log record
+    await addDoc(collection(db, 'spbeSupplies'), {
+      branchId,
+      quantities,
+      createdAt: serverTimestamp()
+    });
+
+    // Calculate updates: subtract from empty, add to filled
+    for (const [type, qtyStr] of Object.entries(quantities)) {
+      const qty = parseInt(qtyStr) || 0;
+      if (qty > 0) {
+        const gasKey = type === '3kg' ? 'gas3kg' : (type === '5.5kg' ? 'gas5_5kg' : 'gas12kg');
+        const currentEmpty = currentData[gasKey]?.empty || 0;
+        const currentFilled = currentData[gasKey]?.filled || 0;
+        
+        updates[`${gasKey}.empty`] = Math.max(0, currentEmpty - qty);
+        updates[`${gasKey}.filled`] = currentFilled + qty;
+      }
+    }
+    
+    if (Object.keys(updates).length > 0) {
+      await updateDoc(stockRef, updates);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error("SPBE Refill Error:", error);
+    throw error;
+  }
+};
+
+export const getSPBEHistory = (callback) => {
+  const q = query(collection(db, 'spbeSupplies'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(list);
+  });
 };
 
 // --- LOGISTICS: DISPATCH & AUTO-STOCK ---
@@ -225,7 +320,9 @@ export const createDeliveryRoute = async (deliveryData, stops) => {
       status: 'berjalan',
       createdAt: serverTimestamp(),
       stopCount: stops.length,
-      completedStops: 0
+      completedStops: 0,
+      currentStopIndex: 0,
+      currentLocation: stops.length > 0 ? `Menuju ${stops[0].pangkalanName}` : 'Gudang Agen'
     });
 
     // 2. Create Stops
@@ -309,6 +406,45 @@ export const getDeliveryStops = (deliveryId, callback) => {
   });
 };
 
+export const updateShipmentLocation = async (deliveryId, data) => {
+  const deliveryRef = doc(db, 'deliveries', deliveryId);
+  await updateDoc(deliveryRef, data);
+};
+
+export const updateDeliveryDoc = async (id, data) => {
+  const ref = doc(db, 'deliveries', id);
+  await updateDoc(ref, data);
+
+  // Cascading update: if delivery is marked done, all its stops must be done
+  if (data.status === 'selesai') {
+    const stopsQuery = query(collection(db, 'deliveryStops'), where('deliveryId', '==', id));
+    const stopsSnap = await getDocs(stopsQuery);
+    const updatePromises = stopsSnap.docs.map(d => {
+       if (d.data().status !== 'selesai') {
+          return updateDoc(d.ref, { status: 'selesai' });
+       }
+       return Promise.resolve();
+    });
+    await Promise.all(updatePromises);
+    
+    // Auto-update location if not specifically provided
+    if (!data.currentLocation) {
+       await updateDoc(ref, { currentLocation: 'Selesai / Kembali ke Gudang' });
+    }
+  }
+};
+
+export const deleteDelivery = async (id) => {
+  // 1. Delete the main delivery doc
+  await deleteDoc(doc(db, 'deliveries', id));
+  
+  // 2. Delete all associated stops
+  const stopsQuery = query(collection(db, 'deliveryStops'), where('deliveryId', '==', id));
+  const stopsSnap = await getDocs(stopsQuery);
+  const deletePromises = stopsSnap.docs.map(d => deleteDoc(d.ref));
+  await Promise.all(deletePromises);
+};
+
 export const getActiveStopsForPangkalan = (pangkalanId, callback) => {
   const q = query(collection(db, 'deliveryStops'), where('pangkalanId', '==', pangkalanId));
   return onSnapshot(q, (snapshot) => {
@@ -359,6 +495,32 @@ export const confirmStopReceipt = async (stopId, receivedItems) => {
   }
   
   await setDoc(pStockRef, pStockUpdates, { merge: true });
+  
+  // 3. Update Delivery Route Location Automatically (SMART TRACKING)
+  if (stopData.deliveryId) {
+    const delRef = doc(db, 'deliveries', stopData.deliveryId);
+    
+    // Find next stop in queue
+    const nextStopsQuery = query(
+       collection(db, 'deliveryStops'), 
+       where('deliveryId', '==', stopData.deliveryId),
+       where('status', '==', 'menunggu')
+    );
+    const nextStopsSnap = await getDocs(nextStopsQuery);
+    const nextStops = nextStopsSnap.docs.map(d => d.data()).sort((a,b) => a.orderIndex - b.orderIndex);
+    
+    if (nextStops.length > 0) {
+       await updateDoc(delRef, { 
+          currentLocation: `Menuju ${nextStops[0].pangkalanName || 'Pangkalan Berikutnya'}`
+       });
+    } else {
+       await updateDoc(delRef, { 
+          currentLocation: 'Selesai / Kembali ke Gudang'
+       });
+       // Optional: Auto-mark the whole delivery as selesai if all stops are done
+       await updateDoc(delRef, { status: 'selesai' });
+    }
+  }
 
   // 4. Update Agen Stock (EMPTY TANKS)
   const deliverySnap = await getDoc(doc(db, 'deliveries', stopData.deliveryId));

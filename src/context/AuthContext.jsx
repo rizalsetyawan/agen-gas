@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     let loginEmail = username;
+    setLoading(true);
 
     try {
       // 1. Cari email berdasarkan username di Firestore jika username bukan email
@@ -57,8 +58,13 @@ export const AuthProvider = ({ children }) => {
       }
 
       // 2. Login dengan email dan password
-      console.log("Mencoba login untuk email:", loginEmail);
-      return await signInWithEmailAndPassword(auth, loginEmail, password);
+      const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+      
+      // 3. Ambil role segera untuk navigasi yang tepat
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      const role = userDoc.exists() ? userDoc.data().role : 'pangkalan';
+      
+      return { user: userCredential.user, role };
     } catch (error) {
       console.error("Login Error Details:", error.code, error.message);
       if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {

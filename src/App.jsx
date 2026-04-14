@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import Login from './pages/Login';
 import Layout from './layouts/Layout';
 import Home from './pages/public/Home';
@@ -14,6 +15,7 @@ import AdminStock from './pages/agen/Stock';
 import AdminReports from './pages/agen/Reports';
 import AdminRoutePlanner from './pages/agen/RoutePlanner';
 import AdminSales from './pages/agen/DataPenjualan';
+import AdminDatabase from './pages/agen/DatabaseManager';
 
 // Pangkalan Pages
 import UserDashboard from './pages/pangkalan/Dashboard';
@@ -46,106 +48,115 @@ const RootRoute = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<RootRoute />} />
-          <Route path="/login" element={<Login />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={['agen']}>
-              <Layout>
-                <AdminDashboard />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/pesanan" element={
-            <ProtectedRoute allowedRoles={['agen']}>
-              <Layout>
-                <AdminOrders />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/pengiriman" element={
-            <ProtectedRoute allowedRoles={['agen']}>
-              <Layout>
-                <AdminDeliveries />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/pangkalan" element={
-            <ProtectedRoute allowedRoles={['agen']}>
-              <Layout>
-                <AdminPangkalan />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/stok" element={
-            <ProtectedRoute allowedRoles={['agen']}>
-              <Layout>
-                <AdminStock />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/laporan" element={
-            <ProtectedRoute allowedRoles={['agen']}>
-              <Layout>
-                <AdminReports />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/planner" element={
-            <ProtectedRoute allowedRoles={['agen']}>
-              <Layout>
-                <AdminRoutePlanner />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/penjualan" element={
-            <ProtectedRoute allowedRoles={['agen']}>
-              <Layout>
-                <AdminSales />
-              </Layout>
-            </ProtectedRoute>
-          } />
+    <Router>
+      <AuthProvider>
+        <NotificationProvider>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<RootRoute />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminDashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/pesanan" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminOrders />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/pengiriman" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminDeliveries />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/pangkalan" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminPangkalan />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/stok" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminStock />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/laporan" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminReports />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/planner" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminRoutePlanner />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/penjualan" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminSales />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/database" element={
+              <ProtectedRoute allowedRoles={['agen']}>
+                <Layout>
+                  <AdminDatabase />
+                </Layout>
+              </ProtectedRoute>
+            } />
 
-          {/* User Routes */}
-          <Route path="/user" element={
-            <ProtectedRoute allowedRoles={['pangkalan']}>
-              <Layout>
-                <UserDashboard />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/user/penjualan" element={
-            <ProtectedRoute allowedRoles={['pangkalan']}>
-              <Layout>
-                <UserSales />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/user/pesan" element={
-            <ProtectedRoute allowedRoles={['pangkalan']}>
-              <Layout>
-                <UserNewOrder />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/user/riwayat" element={
-            <ProtectedRoute allowedRoles={['pangkalan']}>
-              <Layout>
-                <UserHistory />
-              </Layout>
-            </ProtectedRoute>
-          } />
+            {/* User Routes */}
+            <Route path="/user" element={
+              <ProtectedRoute allowedRoles={['pangkalan']}>
+                <Layout>
+                  <UserDashboard />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/user/penjualan" element={
+              <ProtectedRoute allowedRoles={['pangkalan']}>
+                <Layout>
+                  <UserSales />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/user/pesan" element={
+              <ProtectedRoute allowedRoles={['pangkalan']}>
+                <Layout>
+                  <UserNewOrder />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/user/riwayat" element={
+              <ProtectedRoute allowedRoles={['pangkalan']}>
+                <Layout>
+                  <UserHistory />
+                </Layout>
+              </ProtectedRoute>
+            } />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </NotificationProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

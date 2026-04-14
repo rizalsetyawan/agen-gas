@@ -4,9 +4,11 @@ import {
   getOrdersByPangkalan, 
   getPangkalanById, 
   getActiveStopsForPangkalan, 
+  getDeliveryStops,
   confirmStopReceipt,
   db
 } from '../../services/dataService';
+import { useNotification } from '../../context/NotificationContext';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { 
   ShoppingBag, 
@@ -21,7 +23,8 @@ import {
   TrendingUp, 
   BarChart4,
   Box,
-  AlertTriangle
+  AlertTriangle,
+  Navigation
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -30,6 +33,8 @@ const UserDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [pangkalan, setPangkalan] = useState(null);
   const [activeStops, setActiveStops] = useState([]);
+  const [activeDelivery, setActiveDelivery] = useState(null);
+  const [allStops, setAllStops] = useState([]);
   const [pStock, setPStock] = useState({ gas3kg: { filled: 0, empty: 0 }, gas5_5kg: { filled: 0, empty: 0 }, gas12kg: { filled: 0, empty: 0 } });
   
   // Modal State
@@ -37,6 +42,7 @@ const UserDashboard = () => {
   const [selectedStop, setSelectedStop] = useState(null);
   const [confirmData, setConfirmData] = useState({}); // { '3kg': { actual: 100, empty: 100 } }
   const [submitting, setSubmitting] = useState(false);
+  const setNotification = useNotification();
 
   useEffect(() => {
     if (user?.pangkalanId) {
@@ -55,6 +61,27 @@ const UserDashboard = () => {
       };
     }
   }, [user]);
+
+  // Listener for active delivery details
+  useEffect(() => {
+    if (activeStops.length > 0 && activeStops[0].deliveryId) {
+       // Get delivery status/location
+       const unsubDel = onSnapshot(doc(db, 'deliveries', activeStops[0].deliveryId), (doc) => {
+          if (doc.exists()) setActiveDelivery(doc.data());
+       });
+       
+       // Get all stops path
+       const unsubPath = getDeliveryStops(activeStops[0].deliveryId, setAllStops);
+       
+       return () => {
+          unsubDel();
+          unsubPath();
+       };
+    } else {
+       setActiveDelivery(null);
+       setAllStops([]);
+    }
+  }, [activeStops]);
 
   const stats = {
     total: orders.length,
@@ -87,9 +114,10 @@ const UserDashboard = () => {
     setSubmitting(true);
     try {
       await confirmStopReceipt(selectedStop.id, confirmData);
+      setNotification.success("Penerimaan gas berhasil dikonfirmasi!");
       setShowConfirm(false);
     } catch (err) {
-      alert("Gagal konfirmasi: " + err.message);
+      setNotification.error("Gagal konfirmasi: " + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -110,35 +138,79 @@ const UserDashboard = () => {
         </Link>
       </div>
 
-      {/* ACTIVE SHIPMENT ALERT */}
+      {/* ACTIVE SHIPMENT TRACKER - PREMIUM PATHWAY */}
       {activeStops.length > 0 && (
          <div className="card glass stagger-2" style={{ 
-           background: 'linear-gradient(135deg, var(--primary), var(--secondary))', 
-           color: 'white', 
-           marginBottom: '2.5rem', 
-           border: 'none',
-           display: 'flex',
-           justifyContent: 'space-between',
-           alignItems: 'center',
-           gap: '2rem',
-           padding: '2.5rem'
+            background: 'var(--bg-card)', 
+            marginBottom: '2.5rem', 
+            padding: '2.5rem',
+            border: '1px solid var(--border-glass)'
          }}>
-            <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-               <div style={{ background: 'rgba(255,255,255,0.2)', padding: '1.5rem', borderRadius: '24px' }} className="mobile-hide">
-                  <Truck size={40} />
-               </div>
-               <div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', opacity: 0.8, marginBottom: '0.5rem', letterSpacing: '0.1em' }}>ARMADA DALAM PERJALANAN</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-                     {Object.entries(activeStops[0].items || {}).map(([type, qty]) => qty > 0 && (
-                        <div key={type} style={{ fontSize: '1.25rem', fontWeight: 900, whiteSpace: 'nowrap' }}>{type}: {qty}</div>
-                     ))}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }} className="mobile-stack">
+               <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                  <div style={{ background: 'var(--primary-light)', padding: '1rem', borderRadius: '20px', color: 'var(--primary)' }}>
+                     <Truck size={32} />
+                  </div>
+                  <div>
+                     <h2 style={{ fontSize: '1.25rem', fontWeight: 900 }}>Pengiriman Sedang Berlangsung</h2>
+                     <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Lacak rute armada secara real-time di bawah ini.</p>
                   </div>
                </div>
+               <button onClick={() => handleOpenConfirm(activeStops[0])} className="btn btn-primary" style={{ padding: '1rem 2rem' }}>
+                  <Package size={18} style={{marginRight: '0.5rem'}} /> Konfirmasi Penerimaan
+               </button>
             </div>
-            <button onClick={() => handleOpenConfirm(activeStops[0])} className="btn btn-white" style={{ fontWeight: 900, fontSize: '1rem', padding: '1rem 2rem', whiteSpace: 'nowrap' }}>
-               Terima Stok
-            </button>
+
+            {/* ROUTE PATH VISUALIZATION */}
+            <div style={{ padding: '0 1rem', marginBottom: '3rem' }}>
+               <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }} className="mobile-stack">
+                  {/* Line Background */}
+                  <div style={{ position: 'absolute', top: '15px', left: '0', right: '0', height: '2px', background: 'var(--border-glass)', zIndex: 0 }} className="mobile-hide"></div>
+                  
+                  {allStops.map((stop, idx) => {
+                     const isCurrentPangkalan = stop.pangkalanId === user.pangkalanId;
+                     const isFinished = stop.status === 'selesai';
+                     const firstPendingIdx = allStops.findIndex(s => s.status !== 'selesai');
+                     const isActive = idx === firstPendingIdx;
+
+                     return (
+                        <div key={stop.id} style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                           {/* NODE ICON */}
+                           <div style={{ 
+                              width: '32px', height: '32px', borderRadius: '50%', 
+                              background: isFinished ? '#10b981' : (isActive ? 'var(--primary)' : 'var(--bg-app)'), 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              color: 'white', border: '4px solid var(--bg-card)',
+                              boxShadow: isActive ? '0 0 20px var(--primary-light)' : 'none',
+                              transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                              animation: isActive ? 'pulse 2s infinite' : 'none'
+                           }}>
+                              {isFinished ? <CheckCircle2 size={16} /> : (isActive ? <Truck size={16} /> : <div style={{width: '6px', height: '6px', borderRadius: '50%', background: 'var(--text-light)'}}></div>)}
+                           </div>
+                           
+                           {/* LABEL */}
+                           <div style={{ marginTop: '1.25rem' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 900, color: isActive ? 'var(--primary)' : (isFinished ? '#10b981' : 'var(--text-main)'), marginBottom: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}>
+                                 {stop.pangkalanName} 
+                                 {isCurrentPangkalan && <span style={{ background: 'var(--accent)', color: 'white', fontSize: '0.55rem', padding: '1px 5px', borderRadius: '4px' }}>ANDA</span>}
+                              </div>
+                              <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                                 {isFinished ? 'Selesai' : (isActive ? 'Truk di Sini' : 'Antrean')}
+                              </div>
+                           </div>
+                        </div>
+                     );
+                  })}
+               </div>
+            </div>
+
+            {/* LIVE LOCATION BANNER */}
+            {activeDelivery && (
+               <div style={{ padding: '1.5rem', background: 'var(--bg-app)', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid var(--border-glass)' }}>
+                  <Navigation size={18} color="var(--primary)" />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Posisi Terakhir Armada: <b style={{color: 'var(--primary)', marginLeft: '0.5rem'}}>{activeDelivery.currentLocation || 'Kantor Agen'}</b></span>
+               </div>
+            )}
          </div>
       )}
 

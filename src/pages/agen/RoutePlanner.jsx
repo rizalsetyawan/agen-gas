@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getAllOrders, getPangkalan, createDeliveryRoute } from '../../services/dataService';
-import { Truck, Users, Plus, X, Search, MapPin, Package, Save, CheckCircle2, Box } from 'lucide-react';
+import { useNotification } from '../../context/NotificationContext';
+import { Truck, Users, Plus, X, Search, MapPin, Package, Save, CheckCircle2, Box, ArrowUp, ArrowDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const RoutePlanner = () => {
@@ -20,6 +21,7 @@ const RoutePlanner = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const setNotification = useNotification();
 
   useEffect(() => {
     // Get all unfulfilled orders based on pure math (remaining quantity > 0)
@@ -59,10 +61,22 @@ const RoutePlanner = () => {
       setDispatchQuantities(prev => ({ ...prev, [order.id]: initialQtys }));
     }
   };
+  
+  const moveOrder = (index, direction) => {
+    const newOrders = [...selectedOrders];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newOrders.length) return;
+    
+    // Swap
+    const temp = newOrders[index];
+    newOrders[index] = newOrders[targetIndex];
+    newOrders[targetIndex] = temp;
+    setSelectedOrders(newOrders);
+  };
 
   const handleDispatch = async () => {
     if (!deliveryInfo.driverName || !deliveryInfo.truckNumber) {
-      alert("Harap lengkapi plat nomor dan nama supir.");
+      setNotification.warning("Harap lengkapi plat nomor dan nama supir.");
       return;
     }
     
@@ -77,7 +91,7 @@ const RoutePlanner = () => {
     }).filter(stop => Object.values(stop.items).some(q => q > 0)); // Only include if at least 1 unit is sent
 
     if (stopsData.length === 0) {
-       alert("Tidak ada barang yang dijadwalkan untuk dikirim pada rute ini.");
+       setNotification.warning("Tidak ada barang yang dijadwalkan untuk dikirim pada rute ini.");
        return;
     }
 
@@ -88,10 +102,10 @@ const RoutePlanner = () => {
       setSelectedOrders([]);
       setDispatchQuantities({});
       setDeliveryInfo({ driverName: '', truckNumber: '', branchId: deliveryInfo.branchId });
-      alert("Rute Pengiriman Berhasil Dibuat dan Pesanan Diperbarui!");
+      setNotification.success("Rute Pengiriman Berhasil Dibuat dan Pesanan Diperbarui!");
       navigate('/admin/pengiriman');
     } catch (err) {
-      alert("Gagal membuat rute: " + err.message);
+      setNotification.error("Gagal membuat rute: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -236,6 +250,25 @@ const RoutePlanner = () => {
                                {idx + 1}
                              </div>
                              <div style={{ flex: 1, fontWeight: 800, fontSize: '0.85rem' }}>{o.pangkalanName}</div>
+                             
+                             <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); moveOrder(idx, 'up'); }} 
+                                  disabled={idx === 0}
+                                  title="Pindahkan ke atas"
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: idx === 0 ? 'var(--text-light)' : 'var(--primary)', opacity: idx === 0 ? 0.3 : 1 }}
+                                >
+                                   <ArrowUp size={16} />
+                                </button>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); moveOrder(idx, 'down'); }} 
+                                  disabled={idx === selectedOrders.length - 1}
+                                  title="Pindahkan ke bawah"
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: idx === selectedOrders.length - 1 ? 'var(--text-light)' : 'var(--primary)', opacity: idx === selectedOrders.length - 1 ? 0.3 : 1 }}
+                                >
+                                   <ArrowDown size={16} />
+                                </button>
+                             </div>
                              <button onClick={(e) => { e.stopPropagation(); toggleOrderSelection(o); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
                                <X size={16} />
                              </button>
@@ -292,5 +325,3 @@ const RoutePlanner = () => {
 };
 
 export default RoutePlanner;
-;
-
